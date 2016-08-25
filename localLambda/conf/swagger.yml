@@ -1,0 +1,91 @@
+swagger: '2.0'
+info:
+  version: '2016-08-15T00:00:00Z'
+  title: Sethu Blog Reader
+  description: Retrieves blogs
+schemes:
+  - https
+paths:
+  '/blog/{blogId}':
+    get:
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - name: blogId
+          in: path
+          required: true
+          type: string
+      responses:
+        '200':
+          description: 200 response
+          schema:
+            $ref: '#/definitions/Empty'
+        '500':
+          description: 500 response
+          schema:
+            $ref: '#/definitions/Error'
+      x-amazon-apigateway-integration:
+        responses:
+          default:
+            statusCode: '200'
+            responseTemplates:
+              application/json: >-
+                $input.json('$')
+          '.*status\":500.*':
+            statusCode: '500'
+            responseTemplates:
+              application/json: >-
+                #set ($errorMessageObj =
+                $util.parseJson($input.path('$.errorMessage')))
+                #set($errors = $errorMessageObj.errors)
+                {
+                  "errors": [
+                  #foreach($error in $errors)
+                  {
+                    "id": "$error.id",
+                    "status": "$error.status",
+                    "title": "$error.title"
+                  }#if($foreach.hasNext),#end
+                  #end
+                  ]
+                }
+        httpMethod: POST
+        requestTemplates:
+          application/json: |-
+            {
+              "stageVariables": {
+                "stageName" : "${stageVariables.stageName}"
+              },
+              #set($allParams = $input.params())
+              "params" : {
+                #foreach($type in $allParams.keySet())
+                #set($params = $allParams.get($type))
+                "$type" : {
+                  #foreach($paramName in $params.keySet())
+                  "$paramName" : "$util.escapeJavaScript($params.get($paramName))"
+                  #if($foreach.hasNext),#end
+                  #end
+                }
+                #if($foreach.hasNext),#end
+                #end
+              },
+              "httpMethod": "$context.httpMethod",
+              "resourcePath": "$context.resourcePath"
+            }
+        uri: >-
+          arn:aws:apigateway:ap-southeast-2:lambda:path/2015-03-31/functions/arn:aws:lambda:ap-southeast-2:779624523000:function:sethu-blogreader/invocations
+        type: aws
+definitions:
+  Empty:
+    type: string
+  Error:
+    type: object
+    properties:
+      message:
+        type: string
+      type:
+        type: string
+      request-id:
+        type: string

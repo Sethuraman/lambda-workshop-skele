@@ -1,0 +1,11 @@
+{
+  "name": "invoke-lambda",
+  "version": "1.0.0",
+  "description": "",
+  "main": "invokeLambda.js",
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "aws-sdk": "^2.5.3"
+  }
+}
